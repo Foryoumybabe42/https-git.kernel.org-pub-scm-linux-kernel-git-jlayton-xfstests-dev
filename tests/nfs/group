@@ -4,3 +4,4 @@
 # - comment line before each group is "new" description
 #
 001 auto quick nfs4_acl acl
+002 auto quick nfs4_acl acl
