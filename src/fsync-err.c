@@ -24,9 +24,20 @@
 /* default number of fds to open */
 #define DEFAULT_NUM_FDS	10
 
+bool use_sync_file_range;
+
 static void usage()
 {
-	printf("Usage: fsync-err [ -b bufsize ] [ -n num_fds ] [ -s ] -d dmerror path <filename>\n");
+	printf("Usage: fsync-err [ -b bufsize ] [ -n num_fds ] [ -s ] [ -S ] -d dmerror path <filename>\n");
+}
+
+static int sync_file(int fd, size_t bufsize)
+{
+	if (use_sync_file_range)
+		return sync_file_range(fd, 0, bufsize, SYNC_FILE_RANGE_WRITE |
+						SYNC_FILE_RANGE_WAIT_AFTER);
+	else
+		return fsync(fd);
 }
 
 int main(int argc, char **argv)
@@ -38,7 +49,7 @@ int main(int argc, char **argv)
 	size_t cmdsize, bufsize = DEFAULT_BUFSIZE;
 	bool simple_mode = false;
 
-	while ((i = getopt(argc, argv, "b:d:n:s")) != -1) {
+	while ((i = getopt(argc, argv, "b:d:n:sS")) != -1) {
 		switch (i) {
 		case 'b':
 			bufsize = strtol(optarg, &buf, 0);
@@ -66,6 +77,9 @@ int main(int argc, char **argv)
 			 * testing.
 			 */
 			simple_mode = true;
+			break;
+		case 'S':
+			use_sync_file_range = true;
 		}
 	}
 
@@ -114,7 +128,7 @@ int main(int argc, char **argv)
 	}
 
 	for (i = 0; i < numfds; ++i) {
-		ret = fsync(fd[i]);
+		ret = sync_file(fd[i], bufsize);
 		if (ret < 0) {
 			printf("First fsync on fd[%d] failed: %m\n", i);
 			return 1;
@@ -157,7 +171,7 @@ int main(int argc, char **argv)
 	}
 
 	for (i = 0; i < numfds; ++i) {
-		ret = fsync(fd[i]);
+		ret = sync_file(fd[i], bufsize);
 		/* Now, we EXPECT the error! */
 		if (ret >= 0) {
 			printf("Success on second fsync on fd[%d]!\n", i);
@@ -167,7 +181,7 @@ int main(int argc, char **argv)
 
 	if (!simple_mode) {
 		for (i = 0; i < numfds; ++i) {
-			ret = fsync(fd[i]);
+			ret = sync_file(fd[i], bufsize);
 			if (ret < 0) {
 				/*
 				 * We did a failed write and fsync on each fd
@@ -200,7 +214,7 @@ int main(int argc, char **argv)
 
 	if (!simple_mode) {
 		for (i = 0; i < numfds; ++i) {
-			ret = fsync(fd[i]);
+			ret = sync_file(fd[i], bufsize);
 			if (ret < 0) {
 				/* The error should still be clear */
 				printf("fsync after healing device on fd[%d] failed: %m\n", i);
@@ -225,7 +239,7 @@ int main(int argc, char **argv)
 			printf("Second open of fd[%d] failed: %m\n", i);
 			return 1;
 		}
-		ret = fsync(fd[i]);
+		ret = sync_file(fd[i], bufsize);
 		if (ret < 0) {
 			/* New opens should not return an error */
 			printf("First fsync after reopen of fd[%d] failed: %m\n", i);

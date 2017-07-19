@@ -84,6 +84,18 @@ testfile=$SCRATCH_MNT/fsync-err-test
 echo "$here/src/fsync-err $sflag -d $here/src/dmerror $testfile" >> $seqres.full
 $here/src/fsync-err $sflag -d $here/src/dmerror $testfile
 
+# success, finished with first phase
+_dmerror_load_working_table
+_dmerror_unmount
+
+# test sync_file_range
+echo "Format and mount"
+_scratch_mkfs > $seqres.full 2>&1
+_dmerror_mount
+
+echo "$here/src/fsync-err $sflag -S -d $here/src/dmerror $testfile" >> $seqres.full
+$here/src/fsync-err $sflag -S -d $here/src/dmerror $testfile
+
 # success, all done
 _dmerror_load_working_table
 _dmerror_unmount
