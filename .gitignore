@@ -44,7 +44,6 @@
 /ltp/doio
 /ltp/fsstress
 /ltp/fsx
-/ltp/growfiles
 /ltp/iogen
 
 # src/ binaries
