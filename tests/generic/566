@@ -1,0 +1,54 @@
+#! /bin/bash
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (c) 2019 YOUR NAME HERE.  All Rights Reserved.
+#
+# FS QA Test 566
+#
+# Test basic F_SETLEASE functionality. Call the t_setlease program which
+# opens a file and sets a lease on it, and then forks a child to open the
+# same file with various openflags and verify that we get signals as expected.
+#
+# Note that kernels that lack 387e3746d01c (locks: eliminate false positive
+# conflicts for write lease) will fail this test as tasks that have the file
+# open for write are unable to get a F_WRLCK lease.
+#
+seq=`basename $0`
+seqres=$RESULT_DIR/$seq
+echo "QA output created by $seq"
+
+here=`pwd`
+tmp=/tmp/$$
+status=1	# failure is the default!
+trap "_cleanup; exit \$status" 0 1 2 3 15
+
+_cleanup()
+{
+	cd /
+	rm -f $tmp.*
+}
+
+# get standard environment, filters and checks
+. ./common/rc
+. ./common/filter
+
+# remove previous $seqres.full before test
+rm -f $seqres.full
+
+# real QA test starts here
+
+# Modify as appropriate.
+_supported_fs generic
+_supported_os Linux
+_require_test
+
+# if error
+testfile=$TEST_DIR/t_setlease-testfile
+$here/src/t_setlease $testfile
+
+# optional stuff if your test has verbose output to help resolve problems
+#echo
+#echo "If failure, check $seqres.full (this) and $seqres.full.ok (reference)"
+
+# success, all done
+status=0
+exit
